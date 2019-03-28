@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE 1024
+#define SHM_SIZE 1048576
 #define SHM_NAME "shared_memory"
 
 int main(int argc, char const *argv[]) {
@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
     int shm_fd;
     char *ptr, *start;
 
-    if (argc < 3) {
+    if (argc != 3) {
         printf("Usage: %s n_procs wanted_char\n", argv[0]);
         return 1;
     }
@@ -34,6 +34,11 @@ int main(int argc, char const *argv[]) {
     shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
 
     // Defining shared memory space
+    // 1 + n_proc * sizeof(int) + SHM_SIZE
+    // 1 byte for place the wanted char to be found
+    // n_proc * sizeof(int) for the receivers place the sum of occurrences
+    //      founded by them
+    // SHM_SIZE to place the string that will be analyzed by the receivers
     ftruncate(shm_fd, 1 + n_proc * sizeof(int) + SHM_SIZE);
 
     // Mapping the shared memory allocated to the process's address space
@@ -47,7 +52,7 @@ int main(int argc, char const *argv[]) {
     // Save start position
     start = ptr;
 
-    // Write wanted_char in the first position 
+    // Write wanted_char in the first position
     *(ptr++) = wanted_char;
 
     // Writing on spaces
@@ -56,15 +61,15 @@ int main(int argc, char const *argv[]) {
     }
 
     // Writing randomly in the shared memory
+    printf("Writing on the shared memory...\n");
     for (int i = 0; i < SHM_SIZE; i++, ptr++) {
         *ptr = 97 + rand() % 26;
     }
 
     int sum_occurrences;
-
     printf("Waiting for sum to be finished...\n");
     while (1) {
-        ptr = start + 1;
+        ptr = start + 1; // ing
         sum_occurrences = 0;
 
         int sum_finished = 1;
@@ -78,7 +83,7 @@ int main(int argc, char const *argv[]) {
         if (sum_finished) break;
     }
 
-    printf("The sum of occurrences of %c is %d.\n", wanted_char,
+    printf("It's done!\nThe sum of occurrences of %c is %d.\n", wanted_char,
         sum_occurrences);
 
     return 0;
