@@ -3,16 +3,16 @@
 # Rules for compiling the code #
 #------------------------------------------------------------------------------#
 main: src/sender.c src/receiver.c
-	gcc src/sender.c -o bin/sender.exe -lrt
-	gcc src/receiver.c -o bin/receiver.exe -lrt
+	gcc src/sender.c -o bin/sender.out -lrt
+	gcc src/receiver.c -o bin/receiver.out -lrt
 
 # Rules for running the code #
 #------------------------------------------------------------------------------#
-# run: bin/sender.exe
-# 	./bin/sender.exe $(nprocs) $(wchar) &
+# run: bin/sender.out
+# 	./bin/sender.out $(nprocs) $(wchar) &
 # 	sleep 30
 # 	for (( i = 0; i < $(nprocs); i++ )); do
-# 		./bin/receiver.exe $(i) $(nprocs) &
+# 		./bin/receiver.out $(i) $(nprocs) &
 # 	done
 
 # Cleaning #
@@ -23,4 +23,4 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	-@ rm -fv bin/*.exe
+	-@ rm -fv bin/*.out
