@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE 1048576
+#define SHM_SIZE 1073741824
 #define SHM_NAME "shared_memory"
 
 int main(int argc, char const *argv[]) {
@@ -20,7 +20,7 @@ int main(int argc, char const *argv[]) {
     char *ptr, *start;
 
     if (argc != 3) {
-        printf("Usage: %s n_procs wanted_char\n", argv[0]);
+        printf("Usage: %s [n_procs] [wanted_char]\n", argv[0]);
         return 1;
     }
 
@@ -62,8 +62,10 @@ int main(int argc, char const *argv[]) {
 
     // Writing randomly in the shared memory
     printf("Writing on the shared memory...\n");
+    int wanted_char_occurrences = 0;
     for (int i = 0; i < SHM_SIZE; i++, ptr++) {
         *ptr = 97 + rand() % 26;
+        if (*ptr == wanted_char) { wanted_char_occurrences++; }
     }
 
     int sum_occurrences;
@@ -74,17 +76,19 @@ int main(int argc, char const *argv[]) {
 
         int sum_finished = 1;
         for (int i = 0; i < n_proc; i++, ptr += sizeof(int)) {
+            // printf("Sender: Receiver %d had %d occurrences\n", i, (int) *ptr);
             if (*ptr == -1) {
                 sum_finished = 0;
                 break;
-            } else sum_occurrences += *ptr;
+            } else sum_occurrences += (int) *ptr;
         }
 
         if (sum_finished) break;
     }
 
-    printf("It's done!\nThe sum of occurrences of %c is %d.\n", wanted_char,
-        sum_occurrences);
+    printf("It's done!\nThe total of occurrences was originally %d.\n\
+The sum of occurrences by the receivers is of %c is %d.\n",
+        wanted_char_occurrences, wanted_char, sum_occurrences);
 
     return 0;
 }
