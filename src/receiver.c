@@ -62,7 +62,8 @@ int main(int argc, char const *argv[]) {
 
     printf ("Receiver %d: counted %d %c's.\n",
             id_proc, count_wanted_chars, wanted_char);
-    
+
+    // Putting the sum in the appropiated space
     *((int *) sum_ptr) = count_wanted_chars;
 
     return 0;
