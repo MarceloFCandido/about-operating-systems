@@ -9,25 +9,28 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE 1048576 // 1 MB
-// #define SHM_SIZE 1073741824 // 1GB
+#define SHM_SIZE 1024 * 1024 * 1024 // 1 GB
 #define SHM_NAME "shared_memory"
 
 int main(int argc, char const *argv[]) {
 
     int shm_fd;
-    char *ptr, *start;
+    char *ptr, *start, *sum_ptr;
+
+    if (argc != 3) {
+        printf("Usage: %s id_proc n_procs\n", argv[0]);
+        return 1;
+    }
 
     int id_proc = atoi(argv[1]);
-    // printf("Receiver %d: Hello!\n", id_proc);
+    int n_procs = atoi(argv[2]);
 
     // Opening shared memory created by sender
     shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
 
     // Mapping the shared memory allocated by sender to the process's address
     // space
-    int n_proc = atoi(argv[2]);
-    ptr = mmap(0, 1 + n_proc * sizeof(int) + SHM_SIZE, PROT_READ | PROT_WRITE,
+    ptr = mmap(0, 1 + n_procs * sizeof(int) + SHM_SIZE, PROT_READ | PROT_WRITE,
         MAP_SHARED, shm_fd, 0);
     if (ptr == MAP_FAILED) {
         printf("Receiver %d: Map failed\n", id_proc);
@@ -36,43 +39,32 @@ int main(int argc, char const *argv[]) {
 
     // Now, we need to save some information and put the pointer in the place
     // it needs to read
-    char wanted_char = *ptr; // coppin
     start = ptr;
-    ptr++; // entering the spaces for process put its occurrences number
-    for (int i = 0; i < n_proc; i++, ptr += sizeof(int)) {
-        // Skipping the said spaces
+    char wanted_char = *(ptr++); // copying wanted_char from shared memory
+    ptr += n_procs * sizeof(int); /// skipping control bytes
+
+    int count_wanted_chars = 0;
+    sum_ptr = start + 1 + (id_proc * sizeof(int)); // ptr to store final result
+
+    int chars_per_proc = SHM_SIZE / n_procs;
+
+    // Based on id_proc and n_procs, count chars in shared memory positions
+    int start_position = id_proc * chars_per_proc;
+    int end_position = (id_proc + 1) * chars_per_proc;
+
+    if (id_proc == (n_procs - 1)) {
+        end_position = SHM_SIZE; // in case it's the last, count remainder too
     }
-    // the number of characters each process will have to analyze
-    long char_per_proc = SHM_SIZE / n_proc;
-    // if SHM_SIZE % n_proc != 0
-    int remainder_char = SHM_SIZE % n_proc;
 
-    // printf("Receiver %d: pointing for my subtring\n", id_proc);
-    for (int i = 0; i < id_proc * char_per_proc; i++, ptr += sizeof(char)) {}
-
-    int wanted_char_counted = 0;
-    // printf("Receiver %d: starting to count characters '%c' in my substring.\n",
-    //             id_proc, wanted_char);
-    if (id_proc != n_proc - 1) {
-        for (int i = 0; i < char_per_proc; i++, ptr += sizeof(char)) {
-            if (*ptr == wanted_char) { wanted_char_counted++; }
-        }
-    } else { // in the case to be the last process
-        for (int i = 0; i < char_per_proc + remainder_char;
-                i++, ptr += sizeof(char)) {
-            if (*ptr == wanted_char) { wanted_char_counted++; }
-        }
+    for (int i = start_position; i < end_position; i++) {
+        if (ptr[i] == wanted_char) count_wanted_chars++;
     }
 
     printf ("Receiver %d: counted %d %c's.\n",
-            id_proc, wanted_char_counted, wanted_char);
+            id_proc, count_wanted_chars, wanted_char);
 
-    ptr = start;
-    ptr++;
-    for (int i = 0; i < id_proc; i++, ptr += sizeof(int)) {}
-    *ptr = wanted_char_counted;
-    printf("Receiver %d: %d in the pointer location.\n", id_proc, (int) *ptr);
-
+    // Putting the sum in the appropiated space
+    *((int *) sum_ptr) = count_wanted_chars;
 
     return 0;
 }

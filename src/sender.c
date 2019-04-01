@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define SHM_SIZE 1073741824
+#define SHM_SIZE 1024 * 1024 * 1024 // 1 GB
 #define SHM_NAME "shared_memory"
 
 int main(int argc, char const *argv[]) {
@@ -20,7 +20,7 @@ int main(int argc, char const *argv[]) {
     char *ptr, *start;
 
     if (argc != 3) {
-        printf("Usage: %s [n_procs] [wanted_char]\n", argv[0]);
+        printf("Usage: %s n_procs wanted_char\n", argv[0]);
         return 1;
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char const *argv[]) {
 
     // Writing on spaces
     for (int i = 0; i < n_proc; i++, ptr += sizeof(int)) {
-        *ptr = -1;
+        *((int *) ptr) = -1;
     }
 
     // Writing randomly in the shared memory
@@ -76,11 +76,11 @@ int main(int argc, char const *argv[]) {
 
         int sum_finished = 1;
         for (int i = 0; i < n_proc; i++, ptr += sizeof(int)) {
-            // printf("Sender: Receiver %d had %d occurrences\n", i, (int) *ptr);
-            if (*ptr == -1) {
+            int proc_sum = *((int *) ptr);
+            if (proc_sum == -1) {
                 sum_finished = 0;
                 break;
-            } else sum_occurrences += (int) *ptr;
+            } else sum_occurrences += proc_sum;
         }
 
         if (sum_finished) break;
@@ -89,6 +89,12 @@ int main(int argc, char const *argv[]) {
     printf("It's done!\nThe total of occurrences was originally %d.\n\
 The sum of occurrences by the receivers is of %c is %d.\n",
         wanted_char_occurrences, wanted_char, sum_occurrences);
+
+    // reset memory
+    if (shm_unlink(SHM_NAME) == -1) {
+        printf("Error removing %s\n", SHM_NAME);
+        exit(-1);
+    }
 
     return 0;
 }
