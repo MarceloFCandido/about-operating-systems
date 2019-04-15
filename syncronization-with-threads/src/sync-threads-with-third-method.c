@@ -9,7 +9,7 @@ se tornará inconsistente ao executar o programa.*/
 #include <unistd.h>
 
 #define NUM_THREADS 4
-#define NUM_RUNS 10
+#define NUM_RUNS 5
 #define TRUE 1
 #define FALSE 0
 
@@ -37,13 +37,13 @@ void *threadBody (void *kit){
 	
    //Atualiza a variável global
 	for (i = 0; i < NUM_RUNS; i++){
-      kit_casted[i].lock = TRUE; //Indica que o processo i está esperando
+      *(kit_casted[i].lock) = TRUE; //Indica que o processo i está esperando
       key = TRUE; //Indica se o recurso está ocupado ou não
-      while (kit_casted[i].lock && key){
-         key = TSL(&lock); //Sai do “while” quando recurso livre
+      while (*(kit_casted[i].lock) && key){
+         key = TSL(lock); //Sai do “while” quando recurso livre
 
       }
-      kit_casted[i].lock = TRUE;
+      *(kit_casted[i].lock)= TRUE;
       x++;
       /* Executa a seção crítica */
       /*Procura na lista pelo o próximo processo que está esperando*/
@@ -53,7 +53,7 @@ void *threadBody (void *kit){
       if (j == i) //Se não há processos esperando
          *lock = FALSE; //Libera o recurso
       else
-         kit_casted[j].lock = FALSE; //Libera o processo “j” do “while” na linha 4.
+         *(kit_casted[j].lock) = FALSE; //Libera o processo “j” do “while” na linha 4.
  /*executa o restante da seção */ 
          
       
