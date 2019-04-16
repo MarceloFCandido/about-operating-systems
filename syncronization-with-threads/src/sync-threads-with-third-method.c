@@ -1,4 +1,7 @@
-/*Este programa cria N threads que alteram o conteúdo
+/*
+gcc printx2_waiting.c -o a2_waiting.out -lrt -pthread
+/usr/bin/time -v ./a2_waiting.out
+Este programa cria N threads que alteram o conteúdo
 de uma variável global. Como não estão sendo utilizados
 mecanismos de sincronização, o conteúdo da variável
 se tornará inconsistente ao executar o programa.*/
@@ -7,11 +10,10 @@ se tornará inconsistente ao executar o programa.*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <stdbool.h>
 
 #define NUM_THREADS 4
-#define NUM_RUNS 5
+#define NUM_RUNS 10
 #define TRUE 1
 #define FALSE 0
 
@@ -22,56 +24,70 @@ typedef struct kit_t {
 } KIT_t;
 
 int x = 0;
+bool waiting[NUM_THREADS];
+int lock = 0;
 
 boolean TSL(boolean *target) {
    boolean rv = *target;
-   *target = TRUE;
+   *target = true;
    return rv;
 }
 
-void *threadBody (void *kit){
+void * threadBody (void * kit){
 
    KIT_t *kit_casted = (KIT_t *) kit;
-   boolean *lock = kit_casted->lock,key;   
-   long tid = kit_casted->id;
+	long tid = kit_casted->id;
+	int j,k,n = NUM_THREADS;
+	bool key;
 	
-   int i,j;
-	
-   //Atualiza a variável global
-	for (i = 0; i < NUM_RUNS; i++){
-      *(kit_casted[i].lock) = TRUE; //Indica que o processo i está esperando
-      key = TRUE; //Indica se o recurso está ocupado ou não
-      while (*(kit_casted[i].lock) && key){
-         key = TSL(lock); //Sai do “while” quando recurso livre
+	do{
+		/*sinaliza intencao do processo num. id de acessar a regiao critica */
+		waiting[tid] = true;
 
-      }
-      *(kit_casted[i].lock)= TRUE;
-      x++;
-      /* Executa a seção crítica */
-      /*Procura na lista pelo o próximo processo que está esperando*/
-      j = (i + 1) % NUM_THREADS; //Inicia a busca no próximo
-      while ((j != i) && !kit_casted[j].lock) //Enquanto não encontrar
-         j = (j + 1) % NUM_THREADS; //Passa para o próximo
-      if (j == i) //Se não há processos esperando
-         *lock = FALSE; //Libera o recurso
-      else
-         *(kit_casted[j].lock) = FALSE; //Libera o processo “j” do “while” na linha 4.
- /*executa o restante da seção */ 
-         
-      
-   }
+		/*sinaliza recurso ocupado*/
+		key = true;
 
-   pthread_exit (NULL);
+		/*enquanto id esta esperando e o recurso ocupado, test and set*/
+		while(waiting[tid] && key)
+			key = TSL(&lock);
+
+		/*espera acabou*/
+		waiting[tid] = false;
+		
+		/*inicio da secao critica*/
+		x++;
+		/*fim da secao critica*/
+
+		/*procura pelo proximo processo que esta esperando*/
+		j = (tid + 1) % n;
+
+		/*enquanto nao acha-lo, va pro proximo*/
+		while((j!=tid) && !waiting[j])
+			j = (j + 1) % n;
+
+		/*se nao ha ninguem esperando, libera o recurso*/
+		if(j == tid)
+			lock = 0;
+		else
+			waiting[j] = false;
+
+		x++;		
+		
+	} while (x < NUM_RUNS);
+   	pthread_exit (NULL);
 }
 
-int main (int argc, char *argv[]) {
-   pthread_t thread [NUM_THREADS];
-   long i, status;
+int main (int argc, char *argv[])
+{
+	/*aloca espaco para 5 threads*/
+	pthread_t thread [NUM_THREADS];
+	long i, status ;
    KIT_t kits[NUM_THREADS];
 
    boolean lock = FALSE;
-
-   for (i = 0; i < NUM_THREADS; i++) {
+	/*declara as 5 threads e executa em cada uma delas a funcao threadBody*/
+	for (i = 0; i < NUM_THREADS; i++) {
+      printf("%d",i);
       kits[i].id = i;
       kits[i].lock = &lock;
       status = pthread_create (&thread[i], NULL, threadBody, (void *) kits);
@@ -79,9 +95,6 @@ int main (int argc, char *argv[]) {
 	for (i = 0; i < NUM_THREADS; i++) {
 		status = pthread_join (thread[i], NULL);
 	}
-   struct rusage ru;
-   getrusage(RUSAGE_SELF, &ru);
-   printf("\nInvoluntarias: %5ld \nVoluntarias: %5ld",ru.ru_nivcsw,ru.ru_nvcsw);
 	printf ("\n\nValor final de x: %02d\n\n", x);	
-   pthread_exit (NULL) ;
+	pthread_exit (NULL) ;
 }

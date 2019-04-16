@@ -8,6 +8,7 @@ se tornará inconsistente ao executar o programa.*/
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <stdbool.h>
 #include <sys/resource.h>
 
 #define NUM_THREADS 4
@@ -15,24 +16,25 @@ se tornará inconsistente ao executar o programa.*/
 #define TRUE 1
 #define FALSE 0
 
+
 typedef int boolean;
 typedef struct kit_t {
    long id;
-   boolean *lock;
+   bool *lock;
 } KIT_t;
 
 int x = 0;
 
-boolean TSL(boolean *target) {
+boolean TSL(bool *target) {
    boolean rv = *target;
-   *target = TRUE;
+   *target = true;
    return rv;
 }
 
 void *threadBody (void *kit){
 
    KIT_t *kit_casted = (KIT_t *) kit;
-   boolean *lock = kit_casted->lock;   
+   bool *lock = kit_casted->lock;   
    long tid = kit_casted->id;
 	
    int i;
@@ -42,7 +44,7 @@ void *threadBody (void *kit){
       while (TSL(lock))
          printf("Thread %ld: oi!", tid);
       x++;
-      *lock = FALSE;
+      *lock = false;
    }
 
    pthread_exit (NULL);
@@ -53,7 +55,7 @@ int main (int argc, char *argv[]) {
    long i, status;
    KIT_t kits[NUM_THREADS];
 
-   boolean lock = FALSE;
+   bool lock = false;
 
    for (i = 0; i < NUM_THREADS; i++) {
       kits[i].id = i;
