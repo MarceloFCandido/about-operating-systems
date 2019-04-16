@@ -49,9 +49,9 @@ void *threadBody (void *kit){
       x++;
       /* Executa a seção crítica */
       /*Procura na lista pelo o próximo processo que está esperando*/
-      j = (i + 1) % NUM_RUNS; //Inicia a busca no próximo
+      j = (i + 1) % NUM_THREADS; //Inicia a busca no próximo
       while ((j != i) && !kit_casted[j].lock) //Enquanto não encontrar
-         j = (j + 1) % NUM_RUNS; //Passa para o próximo
+         j = (j + 1) % NUM_THREADS; //Passa para o próximo
       if (j == i) //Se não há processos esperando
          *lock = FALSE; //Libera o recurso
       else
