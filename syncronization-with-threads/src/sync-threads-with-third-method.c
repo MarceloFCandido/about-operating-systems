@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <sys/resource.h>
 
 #define NUM_THREADS 4
-#define NUM_RUNS 10
+#define NUM_RUNS 1000
 #define TRUE 1
 #define FALSE 0
 
@@ -87,6 +88,10 @@ int main (int argc, char *argv[])
 	for (i = 0; i < NUM_THREADS; i++) {
 		status = pthread_join (thread[i], NULL);
 	}
-	printf ("\n\nValor final de x: %02d\n\n", x);	
+	printf ("\n\nValor final de x: %02d\n\n", x);
+   struct rusage ru;
+   getrusage(RUSAGE_SELF, &ru);
+   printf("\nInvoluntarias: %5ld \nVoluntarias: %5ld",ru.ru_nivcsw,ru.ru_nvcsw);
+	printf ("\n\nValor final de x: %02d\n\n", x);		
 	pthread_exit (NULL) ;
 }
