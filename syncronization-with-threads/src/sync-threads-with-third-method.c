@@ -1,11 +1,3 @@
-/*
-gcc printx2_waiting.c -o a2_waiting.out -lrt -pthread
-/usr/bin/time -v ./a2_waiting.out
-Este programa cria N threads que alteram o conteúdo
-de uma variável global. Como não estão sendo utilizados
-mecanismos de sincronização, o conteúdo da variável
-se tornará inconsistente ao executar o programa.*/
-
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
