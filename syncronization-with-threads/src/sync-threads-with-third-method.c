@@ -88,8 +88,6 @@ int main (int argc, char *argv[]) {
         status = pthread_join (thread[i], NULL);
     }
 
-    printf ("\n\nValor final de x: %02d\n\n", x);
-
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
 
