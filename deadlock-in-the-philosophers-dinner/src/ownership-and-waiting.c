@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <time.h>
 
-
 #define PHILOS 5
 #define DELAY 5000
 #define FOOD 15000
@@ -32,23 +31,23 @@ int main (int argn, char **argv)
 {
 	long i;
 	srand(time(0));
-	//Inicia mutexes
+	// starting mutexes
 	pthread_mutex_init (&food_lock, NULL);
 	for (i = 0; i < PHILOS; i++){
 		pthread_mutex_init (&chopstick[i], NULL);
 		palito_ocupado[i]=0;
 	}
-	//Cria threads
+	// creating threads
 	for (i = 0; i < PHILOS; i++)
 		pthread_create (&philo[i], NULL, philosopher, (void *)i);
-	//Join threads	
+	// Joining threads	
 	for (i = 0; i < PHILOS; i++)
 		pthread_join (philo[i], NULL);
 	return 0;
 }
 
-//Thread
-void * philosopher (void *num)
+// Thread
+void* philosopher(void *num)
 {
 	long id;
 	int i, left_chopstick, right_chopstick, f;
@@ -56,20 +55,19 @@ void * philosopher (void *num)
 	left_chopstick = id;
 	right_chopstick = (id + 1)%PHILOS;
 
-	if(id==0)
+	if (id == 0)
 		usleep(rand()%2000);
 
-	do{
+	do {
 
 		while(__sync_lock_test_and_set(&lock, 1));
-
-            //When a stick has catch, the another stick can't catch
+            // When a stick has been catched, the another stick can't be catched
 			while(palito_ocupado[left_chopstick] || palito_ocupado[right_chopstick]);
-            //Catch a Stick[left]
-			pthread_mutex_lock (&chopstick[left_chopstick]);
+            // Catch a Stick[left]
+			pthread_mutex_lock(&chopstick[left_chopstick]);
 			printf ("Philosopher %ld: got chopstick %d\n", id,  left_chopstick); palito_ocupado[left_chopstick] = 1;
-            //catch a Stick[Right]
-			pthread_mutex_lock (&chopstick[right_chopstick]);
+            // catch a Stick[Right]
+			pthread_mutex_lock(&chopstick[right_chopstick]);
 			printf ("Philosopher %ld: got chopstick %d\n", id,  right_chopstick); palito_ocupado[right_chopstick] = 1;
 		
 		lock = 0;
@@ -77,19 +75,19 @@ void * philosopher (void *num)
 		f = food_on_table ();
 
 		printf ("Philosopher %ld: eating -- food %d.\n", id, f);
-        //Eat for 200 ms 
-		usleep (rand()%200); 
+        // Eat for 200 ms 
+		usleep(rand()%200); 
 		printf ("Philosopher %ld has finished.\n", id);
 
-		pthread_mutex_unlock (&chopstick[left_chopstick]);
-		printf ("Philosopher %ld: released chopstick %d\n", id,  left_chopstick); palito_ocupado[left_chopstick] = 0;
-		pthread_mutex_unlock (&chopstick[right_chopstick]);
-		printf ("Philosopher %ld: released chopstick %d\n", id,  right_chopstick); palito_ocupado[right_chopstick] = 0;
+		pthread_mutex_unlock(&chopstick[left_chopstick]);
+		printf("Philosopher %ld: released chopstick %d\n", id,  left_chopstick); palito_ocupado[left_chopstick] = 0;
+		pthread_mutex_unlock(&chopstick[right_chopstick]);
+		printf("Philosopher %ld: released chopstick %d\n", id,  right_chopstick); palito_ocupado[right_chopstick] = 0;
         
         //Think about your life
 		usleep (rand()%200); 
 
-	} while(f>0);
+	} while(f > 0);
 
 	return (NULL);
 }
