@@ -85,13 +85,6 @@ void *philosopher(void *num) {
       q_begin++;
     else
       q_begin = 0;
-    // putting this philosopher in queue's end
-    queue[q_end] = id;
-    if (q_end < PHILOS)
-      q_end++;
-    else
-      q_end = 0;
-	print_queue(id);
     pthread_mutex_unlock(&q_lock);
 
     pthread_mutex_unlock(&chopstick[left_chopstick]);
@@ -101,6 +94,16 @@ void *philosopher(void *num) {
            " secs.FOOD %ld\n",
            id, thinking_time, f);
     sleep(thinking_time);
+	
+	// putting this philosopher in queue's end
+    pthread_mutex_lock(&q_lock);
+	queue[q_end] = id;
+    if (q_end < PHILOS)
+      q_end++;
+    else
+      q_end = 0;
+	print_queue(id);
+	pthread_mutex_unlock(&q_lock);
   }
   return (NULL);
 }
@@ -136,4 +139,5 @@ void print_queue(int thread_id) {
     printf("%d ", queue[i]);
   }
   putchar('\n');
+  printf("begin: %d\nend: %d\n", q_begin, q_end);
 }
