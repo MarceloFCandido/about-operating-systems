@@ -1,5 +1,6 @@
 //http://docs.oracle.com/cd/E19205-01/820-0619/gepji/index.html
 
+
 /* din_philo.c */    
 #include <pthread.h>
 #include <stdio.h>
@@ -7,10 +8,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <time.h>
+
 
 #define PHILOS 5
 #define DELAY 5000
-#define FOOD 15
+#define FOOD 15000
 
 void *philosopher (void *id);
 int food_on_table ();
@@ -21,26 +24,23 @@ pthread_mutex_t food_lock;
 
 //Threads
 pthread_t philo[PHILOS];
-int sleep_seconds = 0;
 
-int food = FOOD;
+int lock = 0;
+int palito_ocupado[PHILOS];
 
 int main (int argn, char **argv)
 {
 	long i;
-
-	if (argn == 2)
-		sleep_seconds = atoi (argv[1]);
-
+	srand(time(0));
 	//Inicia mutexes
 	pthread_mutex_init (&food_lock, NULL);
-	for (i = 0; i < PHILOS; i++)
+	for (i = 0; i < PHILOS; i++){
 		pthread_mutex_init (&chopstick[i], NULL);
-	
+		palito_ocupado[i]=0;
+	}
 	//Cria threads
 	for (i = 0; i < PHILOS; i++)
 		pthread_create (&philo[i], NULL, philosopher, (void *)i);
-	
 	//Join threads	
 	for (i = 0; i < PHILOS; i++)
 		pthread_join (philo[i], NULL);
@@ -50,54 +50,60 @@ int main (int argn, char **argv)
 //Thread
 void * philosopher (void *num)
 {
-	long id = (long)num;
-	long i, left_chopstick, right_chopstick, f;
+	long id;
+	int i, left_chopstick, right_chopstick, f;
+	id = (long)num;
 	left_chopstick = id;
-	right_chopstick = (id + 1) % PHILOS;
-	f=1;
-	while (f) {
-		if(pthread_mutex_lock (&chopstick[left_chopstick])) {
-            printf ("Philosopher %ld: DIDN'T got left chopstick %ld\n", id,  left_chopstick);    
-        } else {
-		    printf ("Philosopher %ld: got left chopstick %ld\n", id,  left_chopstick);
-            if (pthread_mutex_lock (&chopstick[right_chopstick])) {
-                printf ("Philosopher %ld: DIDN'T got right chopstick %ld\n", id,  right_chopstick);
-                printf ("Philosopher %ld: releasing left chopstick %ld\n", id,  left_chopstick);
-                pthread_mutex_unlock(&chopstick[left_chopstick]);
-                continue;
-            }
+	right_chopstick = (id + 1)%PHILOS;
 
-            printf ("Philosopher %ld: got right chopstick %ld\n", id,  right_chopstick);
+	if(id==0)
+		usleep(rand()%2000);
 
-            printf ("Philosopher %ld: eating -- food %ld.\n", id, f);
-            f = food_on_table ();
-            sleep (rand()%5);
+	do{
 
-            pthread_mutex_unlock (&chopstick[left_chopstick]);
-            pthread_mutex_unlock (&chopstick[right_chopstick]);
+		while(__sync_lock_test_and_set(&lock, 1));
 
-            int thinking_time=rand()%10;
-            printf ("Philosopher %ld is done eating and is now thinking for %d secs.FOOD %ld\n", id, thinking_time,f);
-            sleep (thinking_time);
-        }
+            //When a stick has catch, the another stick can't catch
+			while(palito_ocupado[left_chopstick] || palito_ocupado[right_chopstick]);
+            //Catch a Stick[left]
+			pthread_mutex_lock (&chopstick[left_chopstick]);
+			printf ("Philosopher %ld: got chopstick %d\n", id,  left_chopstick); palito_ocupado[left_chopstick] = 1;
+            //catch a Stick[Right]
+			pthread_mutex_lock (&chopstick[right_chopstick]);
+			printf ("Philosopher %ld: got chopstick %d\n", id,  right_chopstick); palito_ocupado[right_chopstick] = 1;
 		
-	}
+		lock = 0;
+		
+		f = food_on_table ();
+
+		printf ("Philosopher %ld: eating -- food %d.\n", id, f);
+        //Eat for 200 ms 
+		usleep (rand()%200); 
+		printf ("Philosopher %ld has finished.\n", id);
+
+		pthread_mutex_unlock (&chopstick[left_chopstick]);
+		printf ("Philosopher %ld: released chopstick %d\n", id,  left_chopstick); palito_ocupado[left_chopstick] = 0;
+		pthread_mutex_unlock (&chopstick[right_chopstick]);
+		printf ("Philosopher %ld: released chopstick %d\n", id,  right_chopstick); palito_ocupado[right_chopstick] = 0;
+        
+        //Think about your life
+		usleep (rand()%200); 
+
+	} while(f>0);
+
 	return (NULL);
 }
 
 int food_on_table ()
 {
-    // static int food = FOOD;
+    static int food = FOOD;
     int myfood;
 
     pthread_mutex_lock (&food_lock);
     if (food > 0) {
         food--;
     }
-
     myfood = food;
     pthread_mutex_unlock (&food_lock);
     return myfood;
 }
-
-
