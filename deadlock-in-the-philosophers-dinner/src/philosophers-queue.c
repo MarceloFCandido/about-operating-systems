@@ -94,16 +94,16 @@ void *philosopher(void *num) {
            " secs.FOOD %ld\n",
            id, thinking_time, f);
     sleep(thinking_time);
-	
-	// putting this philosopher in queue's end
+
+    // putting this philosopher in queue's end
     pthread_mutex_lock(&q_lock);
-	queue[q_end] = id;
+    queue[q_end] = id;
     if (q_end < PHILOS)
       q_end++;
     else
       q_end = 0;
-	print_queue(id);
-	pthread_mutex_unlock(&q_lock);
+    print_queue(id);
+    pthread_mutex_unlock(&q_lock);
   }
   return (NULL);
 }
