@@ -134,7 +134,7 @@ void init_queue() {
 }
 
 void print_queue(int thread_id) {
-  printf("thread %d: ", thread_id);
+  printf("queue by thread %d: ", thread_id);
   for (int i = 0; i < PHILOS; i++) {
     printf("%d ", queue[i]);
   }
