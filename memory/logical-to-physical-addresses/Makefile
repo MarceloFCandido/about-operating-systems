@@ -9,7 +9,7 @@ main: src/logical-to-physical-addresses.c
 # Rules for running the code #
 #------------------------------------------------------------------------------#
 run: bin/logical-to-physical-addresses.out
-	./bin/logical-to-physical-addresses.out
+	./bin/logical-to-physical-addresses.out 
 
 # Cleaning #
 #------------------------------------------------------------------------------#
