@@ -2,14 +2,16 @@
 
 # Rules for compiling the code #
 #------------------------------------------------------------------------------#
-main: src/logical-to-physical-addresses.c 
-	gcc src/logical-to-physical-addresses.c -o \
-		bin/logical-to-physical-addresses.out -lm
+main: src/creator.c src/reader.c
+	gcc src/creator.c -o bin/creator.out -lrt
+	gcc src/reader.c -o bin/reader.out -lrt
 
 # Rules for running the code #
 #------------------------------------------------------------------------------#
-run: bin/logical-to-physical-addresses.out
-	./bin/logical-to-physical-addresses.out 
+run: bin/creator.out bin/reader.out
+	./bin/creator.out &
+	./bin/reader.out 0 &
+	./bin/reader.out 1 &
 
 # Cleaning #
 #------------------------------------------------------------------------------#
