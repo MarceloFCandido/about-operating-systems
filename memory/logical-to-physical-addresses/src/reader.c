@@ -11,11 +11,14 @@
 #include <unistd.h>
 
 #define SHM_NAME "shared_memory"
+#define TIMES 7
+
+void print_sh_mem(int id, long *ptr);
 
 int main(int argc, char const *argv[]) {
 
   int shm_fd;
-  int *ptr;
+  long *ptr;
   uintptr_t vaddr, paddr = 0;
 
   // getting reader's id
@@ -27,25 +30,27 @@ int main(int argc, char const *argv[]) {
 
   // Mapping the shared memory allocated by sender to the process's address
   // space
-  ptr =
-      mmap(0, 7 * sizeof(long), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  ptr = mmap(0, TIMES * sizeof(long), PROT_READ | PROT_WRITE, MAP_SHARED,
+             shm_fd, 0);
   if (ptr == MAP_FAILED) {
     printf("Process %d: Map failed\n", getpid());
     return -1;
   }
 
-  ptr[id + 1] = getpid();
+  // putting my own pid on the shared memory
+  ptr[id + 1] = (long)getpid();
 
   // looking for the logical address of the shared variable
   printf("Process %d - logical address: %p\n", getpid(), ptr);
-  ptr[id + 3] = (uintptr_t)ptr;
+  ptr[id + 3] = /*(uintptr_t)*/ (long)ptr;
 
   while (ptr[others_pid + 1] == 0 && ptr[others_pid + 3] == 0)
-    ;
+    ; // the other process put its pid and logical address in the right place
 
-  printf("Process %d sees process %d\n", getpid(), ptr[others_pid + 1]);
+  printf("Process %d sees process %ld\n", getpid(), ptr[others_pid + 1]);
 
-  if (virt_to_phys_user(&paddr, (uintmax_t)ptr[others_pid + 1],
+  // print_sh_mem(id, ptr);
+  if (virt_to_phys_user(&paddr, (pid_t)ptr[others_pid + 1],
                         (uintptr_t)ptr[others_pid + 3])) {
     fprintf(stderr, "error: virt_to_phys_user\n");
     ptr[id + 5] = 1;
@@ -57,7 +62,13 @@ int main(int argc, char const *argv[]) {
     ;
 
   // exibiting physical address found
-  printf("0x%ldx\n", paddr);
+  printf("id: %d : 0x%jx\n", id, paddr);
 
   return 0;
+}
+
+void print_sh_mem(int id, long *ptr) {
+  printf("id: %d - data: %ld\n", id, ptr[0]);
+  printf("id: %d - la1 : %p\n", id, (int *)ptr[3]);
+  printf("id: %d - la2 : %p\n", id, (int *)ptr[4]);
 }
