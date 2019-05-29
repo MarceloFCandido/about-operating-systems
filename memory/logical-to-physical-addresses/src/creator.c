@@ -42,6 +42,7 @@ int main(int argc, char const *argv[]) {
   ptr[6] = 0;
 
   // codition for the termination of the program
+  // readers put 1 in this positions when they terminate
   while (ptr[5] == 0 && ptr[6] == 0)
     ;
 
@@ -49,7 +50,7 @@ int main(int argc, char const *argv[]) {
   if (shm_unlink(SHM_NAME) == -1) {
     printf("Error removing %s\n", SHM_NAME);
     exit(-1);
-  }
+  } 
 
   return 0;
 }

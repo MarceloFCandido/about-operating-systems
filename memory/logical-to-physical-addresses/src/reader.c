@@ -21,7 +21,7 @@ int main(int argc, char const *argv[]) {
   long *ptr;
   uintptr_t vaddr, paddr = 0;
 
-  // getting reader's id
+  // getting my own id
   int id = atoi(argv[1]);
   int others_pid = id ? 0 : 1;
 
@@ -40,7 +40,7 @@ int main(int argc, char const *argv[]) {
   // putting my own pid on the shared memory
   ptr[id + 1] = (long)getpid();
 
-  // looking for the logical address of the shared variable
+  // looking for the logical address of my shared variable
   printf("Process %d - logical address: %p\n", getpid(), ptr);
   ptr[id + 3] = /*(uintptr_t)*/ (long)ptr;
 
@@ -49,13 +49,12 @@ int main(int argc, char const *argv[]) {
 
   printf("Process %d sees process %ld\n", getpid(), ptr[others_pid + 1]);
 
-  // print_sh_mem(id, ptr);
-  if (virt_to_phys_user(&paddr, (pid_t)ptr[others_pid + 1],
-                        (uintptr_t)ptr[others_pid + 3])) {
+  print_sh_mem(id, ptr);
+  if (virt_to_phys_user(&paddr, ptr[id + 1], (uintptr_t)ptr[id + 3])) {
     fprintf(stderr, "error: virt_to_phys_user\n");
     ptr[id + 5] = 1;
     return 1;
-  };
+  }
 
   ptr[id + 5] = 1;
   while (ptr[others_pid + 5] == 0)
