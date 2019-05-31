@@ -53,3 +53,7 @@ dkms.conf
 
 # VS code
 .vscode/
+
+# Compacted files
+*.zip
+*.tar.xz
